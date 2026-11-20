@@ -19,6 +19,10 @@ h3 {
     padding-left: 8px;
 }
 
+h4 {
+    border-bottom: 3px solid #474747;
+}
+
 a {
     color: #0000ff;
     text-decoration: underline;
