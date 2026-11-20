@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <title>サムネくん</title>
+    </head>
+    <body>
+        <div id="home-view">
+            <div class="header">
+                <h1 class="title">サムネくん</h1>
+                <p class="subtitle">サムネイルを作るのに適したツールです。</p>
+            </div>
+            <div class="oya">
+                <div class="s">
+                    <div class="border">
+                        <div class="box">
+                            <p>新しく作る</p>
+                        </div>
+                        <div class="desc">
+                            <p style="margin-top:0;">
+                                ドロップダウンメニューから、プリセットを選択するか、<br>カスタムエリアで自分好みの比率と画質にして作成を押してください。
+                            </p>
+
+                            <div class="setup-box">
+                                <label for="presetSelect">比率・解像度プリセット</label>
+                                <select id="presetSelect" class="setup-select" onchange="onPresetChange()">
+                                    <option value="1280x720" selected>YouTube 標準 (16:9 / 1280×720)</option>
+                                    <option value="1920x1080">YouTube 高画質フルHD (16:9 / 1920×1080)</option>
+                                    <option value="1200x630">X (Twitter)・ブログ用 (1.91:1 / 1200×630)</option>
+                                    <option value="1080x1920">ショート・TikTok・リール縦型 (9:16 / 1080×1920)</option>
+                                    <option value="1080x1080">正方形・SNSアイコン用 (1:1 / 1080×1080)</option>
+                                    <option value="custom">カスタム（幅・高さを自由に入力）</option>
+                                </select>
+
+                                <div class="custom-area">
+                                    <div>
+                                        <label>幅(px)</label>
+                                        <input type="number" id="customW" value="1280" min="100" max="4096" disabled>
+                                    </div>
+                                    <span style="padding-top:18px; font-weight:bold;">×</span>
+                                    <div>
+                                        <label>高さ(px)</label>
+                                        <input type="number" id="customH" value="720" min="100" max="4096" disabled>
+                                    </div>
+                                </div>
+
+                                <button class="btn-create" onclick="createNewCanvas()">▶ このサイズで作成する</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="s">
+                    <div class="border2">
+                        <div class="box2"><p>使い方</p></div>
+                        <div class="desc">
+                            <p>
+                                <p>画像を読み込んで、文字や図形を追加するだけです。広告も一切ありません。
+                            <br>
+                            ユーザーマニュアルの完全版は<a href="manual.html" target="_blank" rel="noopener noreferrer">こちら</a><br>
+                            解像度や比率を設定し、ボタンを押すだけで、サムネ作成が可能です。<br>
+                            <strong style="color: #f00;">注意</strong>　再読み込みすると作業中のデータは消えます
+                        </p>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="editor-view">
+            <div class="top-bar">
+                <span class="size-badge" id="currentSizeBadge">1280 × 720 px</span>
+                <span style="color:#999;">|</span>
+                <select id="shapeSelect" class="select-box">
+                    <option value="rect">四角形</option>
+                    <option value="circle">円</option>
+                    <option value="arrow">矢印</option>
+                </select>
+                <button class="btn" onclick="addSelectedShape()">図形追加</button>
+                <button class="btn" onclick="addText()">文字追加</button>
+                <button class="btn" onclick="document.getElementById('imgLoader').click()">画像追加</button>
+                <input type="file" id="imgLoader" accept="image/*" style="display:none">
+
+                <button class="btn btn-primary" onclick="saveImage()" style="margin-left: auto;">画像を保存 (PNG)</button>
+            </div>
+
+            <div class="workspace">
+
+                <div class="left-panel">
+                    <h3 class="panel-title">アイテムの設定</h3>
+
+                    <div class="control-group">
+                        <label>背景色</label>
+                        <input type="color" id="bgColor" value="#ffffff" oninput="draw()">
+                    </div>
+                    <hr style="border:none; border-top:1px solid #ccc; margin: 12px 0;">
+
+                    <div id="prop-area" style="display:none;">
+                        <div class="control-group" id="text-prop">
+                            <label>テキスト（Enterで改行）</label>
+                            <textarea id="propText" oninput="updateSelectedFromPanel()"></textarea>
+                        </div>
+
+                        <div class="row-inputs control-group">
+                            <div>
+                                <label>X</label>
+                                <input type="number" id="propX" oninput="updateSelectedFromPanel()">
+                            </div>
+                            <div>
+                                <label>Y</label>
+                                <input type="number" id="propY" oninput="updateSelectedFromPanel()">
+                            </div>
+                        </div>
+
+                        <div class="row-inputs control-group" id="size-group">
+                            <div>
+                                <label>幅(px)</label>
+                                <input type="number" id="propW" oninput="updateSelectedFromPanel()">
+                            </div>
+                            <div>
+                                <label>高さ(px)</label>
+                                <input type="number" id="propH" oninput="updateSelectedFromPanel()">
+                            </div>
+                        </div>
+
+                        <div class="control-group" id="fontsize-group">
+                            <label>文字サイズ(px)</label>
+                            <input type="number" id="propFontSize" min="10" max="600" oninput="updateSelectedFromPanel()">
+                        </div>
+
+                        <div class="control-group">
+                            <label>不透明度: <span id="opacityLabel">100</span>%</label>
+                            <input type="range" id="propOpacity" min="0" max="1" step="0.05" value="1" oninput="updateSelectedFromPanel()">
+                        </div>
+
+                        <div class="control-group" id="color-prop">
+                            <label>塗りつぶし色</label>
+                            <input type="color" id="propColor" oninput="updateSelectedFromPanel()">
+                        </div>
+
+                        <div class="control-group" id="stroke-prop">
+                            <label>フチ・枠線色</label>
+                            <input type="color" id="propStroke" oninput="updateSelectedFromPanel()">
+                        </div>
+                    </div>
+
+                    <div id="no-select-msg" style="color:#666; font-size:12px; line-height:1.5;">
+                        キャンバス上のパーツ、または右下の「レイヤー管理」からアイテムを選択すると設定が表示されます。
+                    </div>
+                </div>
+
+                <div class="right-area">
+                    <div class="canvas-box" id="canvasBox">
+                        <canvas id="thumbnailCanvas" width="1280" height="720"></canvas>
+                    </div>
+
+                    <div class="layer-box">
+                        <div class="layer-header">
+                            <h4>レイヤー管理</h4>
+                            <div class="layer-actions">
+                                <button onclick="moveLayer(1)">前面へ</button>
+                                <button onclick="moveLayer(-1)">背面へ</button>
+                                <button onclick="deleteSelected()" style="color:#c00; font-weight:bold;">削除</button>
+                            </div>
+                        </div>
+                        <div class="layer-list" id="layerList"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <script>
+            const canvas = document.getElementById('thumbnailCanvas');
+            const ctx = canvas.getContext('2d');
+
+            let elements = [];
+            let selectedId = null;
+
+            let mode = null; 
+            let startX, startY;
+            let origX, origY, origW, origH, origSize;
+            let snapX = false, snapY = false;
+
+            function onPresetChange() {
+                const val = document.getElementById('presetSelect').value;
+                const wInput = document.getElementById('customW');
+                const hInput = document.getElementById('customH');
+
+                if (val === 'custom') {
+                    wInput.disabled = false;
+                    hInput.disabled = false;
+                } else {
+                    const [w, h] = val.split('x');
+                    wInput.value = w;
+                    hInput.value = h;
+                    wInput.disabled = true;
+                    hInput.disabled = true;
+                }
+            }
+
+            function fitCanvasDisplay() {
+                const box = document.getElementById('canvasBox');
+                const maxW = box.clientWidth - 30;
+                const maxH = box.clientHeight - 45;
+                if (maxW <= 0 || maxH <= 0) return;
+
+                const ratio = Math.min(maxW / canvas.width, maxH / canvas.height, 1);
+                canvas.style.width = Math.round(canvas.width * ratio) + 'px';
+                canvas.style.height = Math.round(canvas.height * ratio) + 'px';
+            }
+
+            window.addEventListener('resize', fitCanvasDisplay);
+
+            function createNewCanvas() {
+                const w = Math.max(100, Math.min(4096, parseInt(document.getElementById('customW').value) || 1280));
+                const h = Math.max(100, Math.min(4096, parseInt(document.getElementById('customH').value) || 720));
+
+                canvas.width = w;
+                canvas.height = h;
+                document.getElementById('currentSizeBadge').textContent = `${w} × ${h} px`;
+
+                document.getElementById('home-view').style.display = 'none';
+                document.getElementById('editor-view').style.display = 'flex';
+
+                fitCanvasDisplay();
+
+                if (elements.length === 0) {
+                    addText("");
+                }
+                draw();
+            }
+
+            function toCanvasX(x) { return canvas.width / 2 + x; }
+            function toCanvasY(y) { return canvas.height / 2 + y; }
+
+            function addText(defaultStr = "") {
+                const defaultSize = Math.round(Math.min(canvas.width, canvas.height) * 0.12);
+                const el = {
+                    id: Date.now() + Math.random(),
+                    type: 'text',
+                    text: defaultStr,
+                    x: 0,
+                    y: 0,
+                    size: defaultSize,
+                    opacity: 1.0,
+                    color: '#ffffff',
+                    stroke: '#000000'
+                };
+                elements.push(el);
+                selectElement(el.id);
+                draw();
+            }
+
+            function addSelectedShape() {
+                const shapeType = document.getElementById('shapeSelect').value;
+                const el = {
+                    id: Date.now() + Math.random(),
+                    type: shapeType,
+                    x: 0,
+                    y: 0,
+                    w: Math.round(canvas.width * 0.25),
+                    h: Math.round(canvas.height * 0.2),
+                    opacity: 1.0,
+                    color: '#2A7DBA',
+                    stroke: '#ffffff'
+                };
+                elements.push(el);
+                selectElement(el.id);
+                draw();
+            }
+
+            document.getElementById('imgLoader').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let w = img.width;
+                        let h = img.height;
+                        const maxInitW = canvas.width * 0.7;
+                        if (w > maxInitW) {
+                            h = h * (maxInitW / w);
+                            w = maxInitW;
+                        }
+                        const el = {
+                            id: Date.now() + Math.random(),
+                            type: 'image',
+                            name: file.name,
+                            img: img,
+                            x: 0,
+                            y: 0,
+                            w: w,
+                            h: h,
+                            opacity: 1.0
+                        };
+                        elements.push(el);
+                        selectElement(el.id);
+                        draw();
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            });
+
+            function renderLayers() {
+                const list = document.getElementById('layerList');
+                list.innerHTML = '';
+
+                for (let i = elements.length - 1; i >= 0; i--) {
+                    const el = elements[i];
+                    const item = document.createElement('div');
+                    item.className = 'layer-item' + (el.id === selectedId ? ' active' : '');
+                    
+                    let label = '';
+                    if (el.type === 'text') label = `📝 文字: ${el.text.replace(/\n/g, ' ')}`;
+                    else if (el.type === 'image') label = `🖼️ 画像: ${el.name || 'アップロード画像'}`;
+                    else if (el.type === 'rect') label = `🟦 図形: 四角形`;
+                    else if (el.type === 'circle') label = `🔵 図形: 円`;
+                    else if (el.type === 'arrow') label = `➡️ 図形: 矢印`;
+
+                    const infoSpan = document.createElement('span');
+                    infoSpan.textContent = label;
+
+                    const coordSpan = document.createElement('span');
+                    coordSpan.style.fontSize = '11px';
+                    coordSpan.style.color = '#666';
+                    coordSpan.textContent = `(${Math.round(el.x)}, ${Math.round(el.y)})`;
+
+                    item.appendChild(infoSpan);
+                    item.appendChild(coordSpan);
+
+                    item.onclick = () => {
+                        selectElement(el.id);
+                        draw();
+                    };
+
+                    list.appendChild(item);
+                }
+            }
+
+            function selectElement(id) {
+                selectedId = id;
+                const el = elements.find(item => item.id === id);
+                const propArea = document.getElementById('prop-area');
+                const noMsg = document.getElementById('no-select-msg');
+
+                renderLayers();
+
+                if (!el) {
+                    propArea.style.display = 'none';
+                    noMsg.style.display = 'block';
+                    return;
+                }
+
+                propArea.style.display = 'block';
+                noMsg.style.display = 'none';
+
+                document.getElementById('text-prop').style.display = (el.type === 'text') ? 'block' : 'none';
+                document.getElementById('fontsize-group').style.display = (el.type === 'text') ? 'block' : 'none';
+                document.getElementById('color-prop').style.display = (el.type !== 'image') ? 'block' : 'none';
+                document.getElementById('stroke-prop').style.display = (el.type !== 'image') ? 'block' : 'none';
+                document.getElementById('size-group').style.display = (el.type !== 'text') ? 'flex' : 'none';
+
+                if (el.type === 'text') {
+                    document.getElementById('propText').value = el.text;
+                    document.getElementById('propFontSize').value = Math.round(el.size);
+                }
+                document.getElementById('propX').value = Math.round(el.x);
+                document.getElementById('propY').value = Math.round(el.y);
+                if (el.type !== 'text') {
+                    document.getElementById('propW').value = Math.round(el.w);
+                    document.getElementById('propH').value = Math.round(el.h);
+                }
+                document.getElementById('propOpacity').value = el.opacity !== undefined ? el.opacity : 1.0;
+                document.getElementById('opacityLabel').textContent = Math.round((el.opacity !== undefined ? el.opacity : 1.0) * 100);
+                if (el.color) document.getElementById('propColor').value = el.color;
+                if (el.stroke) document.getElementById('propStroke').value = el.stroke;
+            }
+
+            function updateSelectedFromPanel() {
+                const el = elements.find(item => item.id === selectedId);
+                if (!el) return;
+
+                if (el.type === 'text') {
+                    el.text = document.getElementById('propText').value;
+                    el.size = parseFloat(document.getElementById('propFontSize').value) || 20;
+                }
+                el.x = parseFloat(document.getElementById('propX').value) || 0;
+                el.y = parseFloat(document.getElementById('propY').value) || 0;
+                if (el.type !== 'text') {
+                    el.w = parseFloat(document.getElementById('propW').value) || 10;
+                    el.h = parseFloat(document.getElementById('propH').value) || 10;
+                }
+                el.opacity = parseFloat(document.getElementById('propOpacity').value);
+                document.getElementById('opacityLabel').textContent = Math.round(el.opacity * 100);
+                if (el.color) el.color = document.getElementById('propColor').value;
+                if (el.stroke) el.stroke = document.getElementById('propStroke').value;
+                renderLayers();
+                draw();
+            }
+
+            function moveLayer(dir) {
+                const idx = elements.findIndex(item => item.id === selectedId);
+                if (idx === -1) return;
+                const newIdx = idx + dir;
+                if (newIdx < 0 || newIdx >= elements.length) return;
+                const temp = elements[idx];
+                elements[idx] = elements[newIdx];
+                elements[newIdx] = temp;
+                renderLayers();
+                draw();
+            }
+
+            function deleteSelected() {
+                elements = elements.filter(item => item.id !== selectedId);
+                selectElement(null);
+                draw();
+            }
+
+            function getBounds(el) {
+                const cx = toCanvasX(el.x);
+                const cy = toCanvasY(el.y);
+
+                if (el.type === 'text') {
+                    ctx.font = `bold ${el.size}px sans-serif`;
+                    const lines = el.text.split('\n');
+                    let maxW = 0;
+                    lines.forEach(line => {
+                        const w = ctx.measureText(line).width;
+                        if (w > maxW) maxW = w;
+                    });
+                    const lineHeight = el.size * 1.2;
+                    const totalH = lineHeight * lines.length;
+                    const w = Math.max(maxW + 20, 60);
+                    return { x: cx - w / 2, y: cy - totalH / 2, w: w, h: totalH };
+                }
+                return { x: cx - el.w / 2, y: cy - el.h / 2, w: el.w, h: el.h };
+            }
+
+            function draw(isExport = false) {
+                ctx.fillStyle = document.getElementById('bgColor').value;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                elements.forEach(el => {
+                    ctx.save();
+                    ctx.globalAlpha = el.opacity !== undefined ? el.opacity : 1.0;
+
+                    const cx = toCanvasX(el.x);
+                    const cy = toCanvasY(el.y);
+
+                    if (el.type === 'image') {
+                        ctx.drawImage(el.img, cx - el.w / 2, cy - el.h / 2, el.w, el.h);
+                    } else if (el.type === 'rect') {
+                        const left = cx - el.w / 2;
+                        const top = cy - el.h / 2;
+                        ctx.fillStyle = el.color;
+                        ctx.fillRect(left, top, el.w, el.h);
+                        ctx.lineWidth = 6;
+                        ctx.strokeStyle = el.stroke;
+                        ctx.strokeRect(left, top, el.w, el.h);
+                    } else if (el.type === 'circle') {
+                        ctx.beginPath();
+                        ctx.ellipse(cx, cy, Math.abs(el.w / 2), Math.abs(el.h / 2), 0, 0, Math.PI * 2);
+                        ctx.fillStyle = el.color;
+                        ctx.fill();
+                        ctx.lineWidth = 6;
+                        ctx.strokeStyle = el.stroke;
+                        ctx.stroke();
+                    } else if (el.type === 'arrow') {
+                        const left = cx - el.w / 2;
+                        const top = cy - el.h / 2;
+                        const w = el.w, h = el.h;
+                        const headW = Math.min(w * 0.4, h);
+                        ctx.beginPath();
+                        ctx.moveTo(left, top + h * 0.3);
+                        ctx.lineTo(left + w - headW, top + h * 0.3);
+                        ctx.lineTo(left + w - headW, top);
+                        ctx.lineTo(left + w, top + h / 2);
+                        ctx.lineTo(left + w - headW, top + h);
+                        ctx.lineTo(left + w - headW, top + h * 0.7);
+                        ctx.lineTo(left, top + h * 0.7);
+                        ctx.closePath();
+                        ctx.fillStyle = el.color;
+                        ctx.fill();
+                        ctx.lineWidth = 4;
+                        ctx.strokeStyle = el.stroke;
+                        ctx.stroke();
+                    } else if (el.type === 'text') {
+                        ctx.font = `bold ${el.size}px sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.lineWidth = Math.max(6, el.size * 0.15);
+                        ctx.lineJoin = 'round';
+                        ctx.strokeStyle = el.stroke;
+                        ctx.fillStyle = el.color;
+
+                        const lines = el.text.split('\n');
+                        const lineHeight = el.size * 1.2;
+                        const startLineY = cy - ((lines.length - 1) * lineHeight) / 2;
+
+                        lines.forEach((line, idx) => {
+                            const ly = startLineY + idx * lineHeight;
+                            ctx.strokeText(line, cx, ly);
+                            ctx.fillText(line, cx, ly);
+                        });
+                    }
+                    ctx.restore();
+                });
+
+                if (isExport) return;
+
+                ctx.save();
+                ctx.strokeStyle = '#ff3333';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 10]);
+                if (snapX) {
+                    ctx.beginPath();
+                    ctx.moveTo(canvas.width / 2, 0);
+                    ctx.lineTo(canvas.width / 2, canvas.height);
+                    ctx.stroke();
+                }
+                if (snapY) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, canvas.height / 2);
+                    ctx.lineTo(canvas.width, canvas.height / 2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+
+                const selected = elements.find(item => item.id === selectedId);
+                if (selected) {
+                    const b = getBounds(selected);
+                    const scale = Math.max(1, canvas.width / 640);
+                    const handleSize = 16 * scale;
+                    ctx.save();
+                    ctx.strokeStyle = '#00a8ff';
+                    ctx.lineWidth = 2 * scale;
+                    ctx.strokeRect(b.x, b.y, b.w, b.h);
+
+                    ctx.fillStyle = '#00a8ff';
+                    ctx.fillRect(b.x + b.w - handleSize / 2, b.y + b.h - handleSize / 2, handleSize, handleSize);
+                    ctx.restore();
+                }
+            }
+
+            function getMousePos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                    y: (e.clientY - rect.top) * (canvas.height / rect.height)
+                };
+            }
+
+            canvas.addEventListener('mousedown', function(e) {
+                const pos = getMousePos(e);
+                startX = pos.x;
+                startY = pos.y;
+                const hitMargin = 20 * Math.max(1, canvas.width / 640);
+
+                const selected = elements.find(item => item.id === selectedId);
+                if (selected) {
+                    const b = getBounds(selected);
+                    if (Math.abs(pos.x - (b.x + b.w)) < hitMargin && Math.abs(pos.y - (b.y + b.h)) < hitMargin) {
+                        mode = 'resize';
+                        origW = b.w;
+                        origH = b.h;
+                        origSize = selected.size || 90;
+                        return;
+                    }
+                }
+
+                for (let i = elements.length - 1; i >= 0; i--) {
+                    const el = elements[i];
+                    const b = getBounds(el);
+                    if (pos.x >= b.x && pos.x <= b.x + b.w && pos.y >= b.y && pos.y <= b.y + b.h) {
+                        selectElement(el.id);
+                        mode = 'move';
+                        origX = el.x;
+                        origY = el.y;
+                        draw();
+                        return;
+                    }
+                }
+
+                selectElement(null);
+                draw();
+            });
+
+            canvas.addEventListener('mousemove', function(e) {
+                const pos = getMousePos(e);
+                const el = elements.find(item => item.id === selectedId);
+                if (!el || !mode) return;
+
+                const dx = pos.x - startX;
+                const dy = pos.y - startY;
+
+                if (mode === 'move') {
+                    el.x = origX + dx;
+                    el.y = origY + dy;
+
+                    if (Math.abs(el.x) < 15) {
+                        el.x = 0;
+                        snapX = true;
+                    } else {
+                        snapX = false;
+                    }
+
+                    if (Math.abs(el.y) < 15) {
+                        el.y = 0;
+                        snapY = true;
+                    } else {
+                        snapY = false;
+                    }
+
+                    document.getElementById('propX').value = Math.round(el.x);
+                    document.getElementById('propY').value = Math.round(el.y);
+                    renderLayers();
+                } else if (mode === 'resize') {
+                    if (el.type === 'text') {
+                        el.size = Math.max(20, origSize + dy * 0.8);
+                        document.getElementById('propFontSize').value = Math.round(el.size);
+                    } else {
+                        el.w = Math.max(30, origW + dx);
+                        el.h = Math.max(30, origH + dy);
+                        document.getElementById('propW').value = Math.round(el.w);
+                        document.getElementById('propH').value = Math.round(el.h);
+                    }
+                }
+                draw();
+            });
+
+            window.addEventListener('mouseup', function() {
+                mode = null;
+                snapX = false;
+                snapY = false;
+                draw();
+            });
+
+            function saveImage() {
+                draw(true);
+                const link = document.createElement('a');
+                link.download = `samune-kun_${canvas.width}x${canvas.height}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                draw(false);
+            }
+        </script>
+    </body>
+</html>
+
+<style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                font-family: 'Arial', 'Meiryo', sans-serif;
+                background-color: #fafafa;
+                color: #333;
+            }
+
+            #home-view {
+                margin: 5% 10%;
+                display: block;
+            }
+            .header { padding: 10px 0; }
+            .title { font-size: 35px; margin: 0; }
+            .subtitle { color: #26A631; font-weight: bold; }
+            .oya { display: flex; gap: 20px; margin-top: 20px; }
+            .s { width: 50%; display: flex; }
+            .box {
+                background-color: #2A7DBA;
+                color: #fff;
+                padding: 8px 20px;
+                border-top-left-radius: 10px;
+                border-top-right-radius: 10px;
+                font-weight: bold;
+            }
+            .box p, .box2 p { margin: 0; }
+            .box2 {
+                background-color: #D4D4D4;
+                padding: 8px 20px;
+                border-top-left-radius: 10px;
+                border-top-right-radius: 10px;
+                font-weight: bold;
+            }
+            .border { border: 3px solid #2A7DBA; border-radius: 13px; background: #fff; width: 100%; }
+            .border2 { border: 3px solid #D4D4D4; border-radius: 13px; background: #fff; width: 100%; }
+            .desc { padding: 15px 20px; }
+
+            .setup-box {
+                background: #f4f8fb;
+                border: 1px solid #cce0f0;
+                border-radius: 8px;
+                padding: 12px;
+                margin-top: 12px;
+            }
+            .setup-box label {
+                display: block;
+                font-size: 13px;
+                font-weight: bold;
+                margin-bottom: 6px;
+            }
+            .setup-select {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #aaa;
+                border-radius: 4px;
+                font-size: 14px;
+                background: #fff;
+            }
+            .custom-area {
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+                align-items: center;
+            }
+            .custom-area div { flex: 1; }
+            .custom-area input {
+                width: 100%;
+                padding: 6px;
+                border: 1px solid #aaa;
+                border-radius: 4px;
+            }
+            .custom-area input:disabled {
+                background: #e9e9e9;
+                color: #777;
+            }
+            .btn-create {
+                width: 100%;
+                margin-top: 14px;
+                padding: 10px;
+                background: #2A7DBA;
+                color: #fff;
+                border: none;
+                border-radius: 6px;
+                font-size: 15px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            .btn-create:hover { background: #216699; }
+
+            #editor-view {
+                display: none;
+                height: 100vh;
+                flex-direction: column;
+            }
+
+            .top-bar {
+                background: #e5e5e5;
+                border-bottom: 1px solid #ccc;
+                padding: 10px 20px;
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            .btn {
+                padding: 7px 14px;
+                border: 1px solid #aaa;
+                background: #fff;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 13px;
+            }
+            .btn:hover { background: #f0f0f0; }
+            .btn-primary { background: #2A7DBA; color: #fff; border: none; }
+            .btn-primary:hover { background: #216699; }
+            .btn-back { background: #666; color: #fff; border: none; }
+            .select-box {
+                padding: 7px;
+                border-radius: 4px;
+                border: 1px solid #aaa;
+                background: #fff;
+                font-size: 13px;
+            }
+            .size-badge {
+                font-size: 12px;
+                background: #fff;
+                border: 1px solid #bbb;
+                padding: 5px 10px;
+                border-radius: 4px;
+                color: #444;
+            }
+
+            .workspace {
+                display: flex;
+                flex: 1;
+                padding: 15px;
+                gap: 15px;
+                overflow: hidden;
+            }
+
+            .left-panel {
+                width: 300px;
+                background: #eaeaea;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 15px;
+                overflow-y: auto;
+                flex-shrink: 0;
+            }
+            .panel-title {
+                margin: 0 0 12px 0;
+                font-size: 15px;
+                border-bottom: 2px solid #bbb;
+                padding-bottom: 5px;
+            }
+            .control-group { margin-bottom: 12px; }
+            .control-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+            .control-group input, .control-group textarea {
+                width: 100%;
+                padding: 6px;
+                border: 1px solid #bbb;
+                border-radius: 4px;
+                font-family: inherit;
+            }
+            .control-group textarea {
+                resize: vertical;
+                min-height: 60px;
+            }
+            .row-inputs { display: flex; gap: 8px; }
+            .row-inputs > div { width: 50%; }
+
+            .right-area {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                min-width: 0;
+            }
+
+            .canvas-box {
+                flex: 1;
+                background: #e5e5e5;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 12px;
+                overflow: hidden;
+            }
+            canvas {
+                background: #fff;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                display: block;
+            }
+            .hint { font-size: 11px; color: #555; margin: 8px 0 0 0; }
+
+            .layer-box {
+                height: 180px;
+                background: #eaeaea;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 10px 15px;
+                display: flex;
+                flex-direction: column;
+                flex-shrink: 0;
+            }
+            .layer-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+                border-bottom: 1px solid #ccc;
+                padding-bottom: 5px;
+            }
+            .layer-header h4 { margin: 0; font-size: 14px; }
+            .layer-actions button {
+                padding: 4px 10px;
+                font-size: 12px;
+                cursor: pointer;
+                margin-left: 4px;
+            }
+            .layer-list {
+                flex: 1;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .layer-item {
+                background: #fff;
+                border: 1px solid #ccc;
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 13px;
+                cursor: pointer;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .layer-item:hover { background: #f5f9ff; }
+            .layer-item.active {
+                background: #d0e8ff;
+                border-color: #2A7DBA;
+                font-weight: bold;
+            }
+        </style>
